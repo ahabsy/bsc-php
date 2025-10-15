@@ -23,7 +23,8 @@ class PEMHelper
 
         $config = [
             'private_key_type' => OPENSSL_KEYTYPE_EC,
-            'curve_name' => 'secp256k1'
+            'curve_name' => 'secp256k1',
+            'private_key_bits' => 2048,
         ];
 
         $res = openssl_pkey_new($config);
