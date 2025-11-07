@@ -44,12 +44,23 @@ class BEP20 extends Bnb
         return Utils::toDisplayAmount($balance, $this->decimals);
     }
 
-    public function transfer(string $privateKey, string $to, float $value, string $gasPrice = 'standard')
+    /**
+     * Transfers BEP20 tokens from a given private key to a recipient address
+     *
+     * @param string $privateKey The private key of the sender
+     * @param string $to The recipient's address
+     * @param float $value The amount of BEP20 tokens to transfer
+     * @param string $apiKey Etherscan API key to use for gas price estimation
+     * @param string $gasPrice The gas price to use for the transaction, either in wei or a string like 'standard'
+     *
+     * @return string The transaction hash of the transfer
+     */
+    public function transfer(string $privateKey, string $to, float $value, string $apiKey, string $gasPrice = 'standard')
     {
         $from = PEMHelper::privateKeyToAddress($privateKey);
         $nonce = $this->proxyApi->getNonce($from);
         if (!Utils::isHex($gasPrice)) {
-            $gasPrice = Utils::toHex(self::gasPriceOracle($gasPrice), true);
+            $gasPrice = Utils::toHex(self::gasPriceOracle($gasPrice, $apiKey), true);
         }
         $params = [
             'nonce' => "$nonce",
