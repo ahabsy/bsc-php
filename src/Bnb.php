@@ -18,35 +18,18 @@ class Bnb
         return call_user_func_array([$this->proxyApi, $name], $arguments);
     }
 
-    
-    /**
-     * Retrieves the current gas price in mwei based on the given type.
-     * 
-     * @param string $type Type of gas price to retrieve. Can be 'rapid', 'fast', or 'standard'. Defaults to 'standard'.
-     * @param string $apiKey Etherscan API key to use for gas price estimation
-     * @return string Current gas price in mwei
-     */
-    public static function gasPriceOracle($type = 'standard', $apiKey): string
+    // type:[standard|fast|rapid]
+    public static function gasPriceOracle($type = 'standard')
     {
-        $url = 'https://api.etherscan.io/v2/api?chainid=56&module=gastracker&action=gasoracle&apikey='.$apiKey;
+        $url = 'https://gbsc.blockscan.com/gasapi.ashx?apikey=key&method=pendingpooltxgweidata';
         $res = Utils::httpRequest('GET', $url);
-        
-        if (isset($res['status']) && $res['status'] == '1' && isset($res['result'])) {
-            $gasPriceGwei = match($type) {
-                'rapid' => $res['result']['FastGasPrice'] ?? $res['result']['ProposeGasPrice'],
-                'fast' => $res['result']['ProposeGasPrice'] ?? $res['result']['SafeGasPrice'],
-                'standard' => $res['result']['SafeGasPrice'] ?? $res['result']['ProposeGasPrice'],
-                default => $res['result']['ProposeGasPrice']
-            };
-            
-            $gasPriceMwei = (float)$gasPriceGwei * 1000;
-            $price = Utils::toWei((string)$gasPriceMwei, 'mwei');
-            return (string)$price;
+        if ($type && isset($res['result'][$type . 'gaspricegwei'])) {
+            $price = Utils::toWei((string)$res['result'][$type . 'gaspricegwei'], 'gwei');
+            //            $price = $price * 1e9;
+            return $price;
+        } else {
+            return $res;
         }
-        
-        // Fallback to 0.05 gwei if status is 0 or API fails
-        $fallbackPrice = Utils::toWei('50', 'mwei');
-        return (string)$fallbackPrice;
     }
 
     public static function getChainId($network): int
@@ -66,22 +49,12 @@ class Bnb
         return $chainId;
     }
 
-    /**
-     * Transfers BNB to a given address.
-     * 
-     * @param string $privateKey Private key of the sender.
-     * @param string $to Address to transfer BNB to.
-     * @param float $value Amount of BNB to transfer, in ether.
-     * @param string $apiKey Etherscan API key to use for gas price estimation
-     * @param string $gasPrice Gas price to use for the transaction, in gwei. Can be 'rapid', 'fast', or 'standard'. Defaults to 'standard'.
-     * @return array Response from the proxy API.
-     */
-    public function transfer(string $privateKey, string $to, float $value, string $apiKey, string $gasPrice = 'standard')
+    public function transfer(string $privateKey, string $to, float $value, string $gasPrice = 'standard')
     {
         $from = PEMHelper::privateKeyToAddress($privateKey);
         $nonce = $this->proxyApi->getNonce($from);
         if (!Utils::isHex($gasPrice)) {
-            $gasPrice = Utils::toHex(self::gasPriceOracle($gasPrice, $apiKey), true);
+            $gasPrice = Utils::toHex(self::gasPriceOracle($gasPrice), true);
         }
 
         $eth = Utils::toWei("$value", 'ether');
