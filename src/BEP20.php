@@ -61,8 +61,8 @@ class BEP20 extends Bnb
         $nonce = $this->proxyApi->getNonce($from);
         $gasPriceManual = (string) Utils::toWei('5000', 'gwei');
         if (!Utils::isHex($gasPrice)) {
-            // $gasPrice = Utils::toHex(self::gasPriceOracle($gasPrice, $apiKey), true);
-            $gasPrice = Utils::toHex($gasPriceManual, true);
+            $gasPrice = Utils::toHex(self::gasPriceOracle($gasPrice, $apiKey), true);
+            // $gasPrice = Utils::toHex($gasPriceManual, true);
         }
         $params = [
             'nonce' => "$nonce",
